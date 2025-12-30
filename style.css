@@ -4,18 +4,13 @@
   --bgA:#050814;
   --bgB:#0B1532;
 
-  --panel: rgba(255,255,255,0.06);
-  --panel2: rgba(255,255,255,0.08);
   --stroke: rgba(255,255,255,0.14);
-
   --text: rgba(255,255,255,0.92);
   --muted: rgba(255,255,255,0.66);
 
-  --accent: rgba(59,130,246,0.95);
   --accentStroke: rgba(59,130,246,0.42);
 
   --shadow: 0 18px 55px rgba(0,0,0,0.60);
-  --r: 18px;
 }
 
 html, body { height: 100%; }
@@ -46,7 +41,7 @@ body{
   grid-template-rows: auto 1fr auto auto;
 }
 
-/* ---------- Top bar (premium + compact) ---------- */
+/* Header */
 .topbar{
   padding: 14px 14px 12px;
   display:flex;
@@ -96,7 +91,7 @@ body{
   color: var(--muted);
 }
 
-/* Actions: wrap nicely, not huge pills */
+/* Header buttons */
 .actions{
   display:flex;
   flex-wrap: wrap;
@@ -125,17 +120,17 @@ body{
 }
 .control:active{ transform: translateY(0px) scale(0.99); }
 
-select.control{
-  padding-right: 28px;
-}
+select.control{ padding-right: 28px; }
 
-/* ---------- Chat ---------- */
+/* Chat */
 .chat{
   padding: 14px;
   overflow-y: auto;
   display:flex;
   flex-direction: column;
   gap: 10px;
+  position: relative;
+  z-index: 10;
 }
 
 .bubble{
@@ -147,9 +142,7 @@ select.control{
   box-shadow: 0 10px 20px rgba(0,0,0,0.22);
   line-height: 1.35;
   font-size: 14px;
-  animation: pop .12s ease-out;
 }
-@keyframes pop { from { transform: scale(0.985); opacity: 0.65;} to { transform: scale(1); opacity:1;} }
 
 .bubble.you{
   align-self: flex-end;
@@ -157,12 +150,9 @@ select.control{
   border-color: var(--accentStroke);
 }
 
-.bubble.bot{
-  align-self: flex-start;
-  background: rgba(255,255,255,0.07);
-}
+.bubble.bot{ align-self: flex-start; }
 
-/* ---------- Quick actions ---------- */
+/* Quick actions */
 .quick{
   padding: 10px 12px 12px;
   display:flex;
@@ -170,6 +160,8 @@ select.control{
   gap: 8px;
   background: rgba(0,0,0,0.16);
   border-top: 1px solid rgba(255,255,255,0.10);
+  position: relative;
+  z-index: 20;
 }
 
 .chip{
@@ -188,20 +180,20 @@ select.control{
   background: rgba(255,255,255,0.10);
   border-color: rgba(255,255,255,0.22);
 }
-.chip:active{ transform: translateY(0px) scale(0.99); }
-
 .chip.primary{
   background: rgba(59,130,246,0.16);
   border-color: rgba(59,130,246,0.40);
 }
 
-/* ---------- Composer ---------- */
+/* Composer (typing fix included) */
 .composer{
   padding: 12px;
   display:flex;
   gap: 10px;
   background: rgba(0,0,0,0.18);
   border-top: 1px solid rgba(255,255,255,0.10);
+  position: relative;
+  z-index: 50;
 }
 
 .composer input{
@@ -213,6 +205,7 @@ select.control{
   color: var(--text);
   outline:none;
   font-size: 14px;
+  pointer-events: auto;
 }
 .composer input::placeholder{ color: rgba(255,255,255,0.45); }
 .composer input:focus{
@@ -228,14 +221,11 @@ select.control{
   background: linear-gradient(180deg, rgba(59,130,246,0.95), rgba(59,130,246,0.80));
   color: white;
   font-weight: 700;
-  transition: transform .12s ease, filter .12s ease;
+  pointer-events: auto;
 }
-.send:hover{ transform: translateY(-1px); filter: brightness(1.05); }
-.send:active{ transform: translateY(0px) scale(0.99); }
 
-/* ---------- Mobile tweaks ---------- */
+/* Mobile */
 @media (max-width: 420px){
-  .app{ height: 94vh; }
   .badge{ display:none; }
   .actions{ max-width: 60%; }
   .chip{ font-size: 12px; padding: 8px 10px; }

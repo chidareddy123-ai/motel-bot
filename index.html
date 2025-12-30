@@ -8,81 +8,91 @@
 </head>
 
 <body>
-<div class="app">
+  <div class="app">
 
-  <!-- ===== HEADER ===== -->
-  <header class="topbar">
-    <div class="brand">
-      <div class="brandTop">
-        <h1>AmericInn Hartford</h1>
-        <span class="badge">Guest Assistant</span>
+    <!-- ===== HEADER ===== -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brandTop">
+          <h1>AmericInn Hartford</h1>
+          <span class="badge">Guest Assistant</span>
+        </div>
+        <p id="roomLine">Room: —</p>
       </div>
-      <p id="roomLine">Room: —</p>
-    </div>
 
-    <div class="actions">
-      <select id="langSelect" class="control">
-        <option value="en">English</option>
-        <option value="es">Español</option>
-      </select>
+      <div class="actions">
+        <select id="langSelect" class="control" aria-label="Language">
+          <option value="en">English</option>
+          <option value="es">Español</option>
+        </select>
 
-      <button id="infoBtn" class="control">Hotel Info</button>
-      <button id="callBtn" class="control">Call</button>
-      <button id="resetBtn" class="control">Reset</button>
-    </div>
-  </header>
+        <button id="infoBtn" class="control" type="button">Hotel Info</button>
+        <button id="callBtn" class="control" type="button">Call</button>
+        <button id="resetBtn" class="control" type="button">Reset</button>
+      </div>
+    </header>
 
-  <!-- ===== CHAT ===== -->
-  <main id="chat" class="chat"></main>
+    <!-- ===== CHAT ===== -->
+    <main id="chat" class="chat"></main>
 
-  <!-- ===== QUICK ACTIONS ===== -->
-  <section class="quick">
-    <button class="chip primary" data-msg="I need extra towels.">🧻 Towels</button>
-    <button class="chip" data-msg="I need toiletries like soap or shampoo.">🧼 Toiletries</button>
-    <button class="chip" data-msg="I have a maintenance issue in my room.">🔧 Maintenance</button>
-    <button class="chip" data-msg="Can I request a late checkout?">⏰ Late checkout</button>
-    <button class="chip" data-msg="I need Wi-Fi help.">📶 Wi-Fi help</button>
-    <button class="chip" data-msg="I want to report a noise complaint.">🔇 Noise</button>
-  </section>
+    <!-- ===== QUICK ACTIONS ===== -->
+    <section class="quick">
+      <button class="chip primary" type="button" data-msg="I need extra towels.">🧻 Towels</button>
+      <button class="chip" type="button" data-msg="I need toiletries like soap or shampoo.">🧼 Toiletries</button>
+      <button class="chip" type="button" data-msg="I have a maintenance issue in my room.">🔧 Maintenance</button>
+      <button class="chip" type="button" data-msg="Can I request a late checkout?">⏰ Late checkout</button>
+      <button class="chip" type="button" data-msg="I need Wi-Fi help.">📶 Wi-Fi help</button>
+      <button class="chip" type="button" data-msg="I want to report a noise complaint.">🔇 Noise</button>
+    </section>
 
-  <!-- ===== INPUT ===== -->
-  <footer class="composer">
-    <input id="input" type="text" placeholder="Type your message…" />
-    <button id="sendBtn" class="send">Send</button>
-  </footer>
+    <!-- ===== INPUT ===== -->
+    <footer class="composer">
+      <input id="input" type="text" placeholder="Type your message…" autocomplete="off" />
+      <button id="sendBtn" class="send" type="button">Send</button>
+    </footer>
 
-</div>
+  </div>
 
 <script>
 /* ================= CONFIG ================= */
 
+// Your Google Apps Script Web App URL (ends with /exec)
 const SHEET_LOG_URL =
   "https://script.google.com/macros/s/AKfycbzxatP2NITNy0X10cyUo3jl5gcQnTA6qbohTqyXZB8aBimmaQ89jVGy4O6GB25gYirvhA/exec";
 
+// Front desk phone
 const FRONT_DESK_PHONE = "2626732200";
 
-/* ================= STATE ================= */
+/* ================= ELEMENTS ================= */
 
 const chat = document.getElementById("chat");
 const input = document.getElementById("input");
+const sendBtn = document.getElementById("sendBtn");
+const resetBtn = document.getElementById("resetBtn");
+const langSelect = document.getElementById("langSelect");
+const infoBtn = document.getElementById("infoBtn");
+const callBtn = document.getElementById("callBtn");
 
-let room = new URLSearchParams(location.search).get("room")
-        || localStorage.getItem("room") || "";
+/* ================= STATE ================= */
 
+const params = new URLSearchParams(location.search);
+
+let room = params.get("room") || localStorage.getItem("room") || "";
 let lang = localStorage.getItem("lang") || "en";
 let messages = JSON.parse(localStorage.getItem("messages") || "[]");
 
 /* ================= INIT ================= */
 
+langSelect.value = lang;
+
 if (!room) {
-  room = prompt("Enter your room number:");
+  room = (prompt("Enter your room number (example: 106):") || "").trim();
   if (room) localStorage.setItem("room", room);
 }
 
 document.getElementById("roomLine").textContent = room ? `Room: ${room}` : "Room: —";
-document.getElementById("langSelect").value = lang;
 
-/* ================= UI HELPERS ================= */
+/* ================= HELPERS ================= */
 
 function bubble(text, who) {
   const el = document.createElement("div");
@@ -92,114 +102,136 @@ function bubble(text, who) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-function render() {
+function renderHistory() {
   chat.innerHTML = "";
-  if (!messages.length) {
+
+  if (messages.length === 0) {
     bubble(
       lang === "es"
-        ? "¡Hola! Puedo ayudarte con toallas, Wi-Fi, salida tardía y mantenimiento. ¿Qué necesitas?"
-        : "Hi! I’m your hotel assistant. How can I help you today?",
+        ? "¡Hola! Soy tu asistente del hotel. Puedo ayudarte con toallas, artículos de aseo, Wi-Fi, salida tardía y mantenimiento. ¿Qué necesitas?"
+        : "Hi! I’m your hotel assistant. I can help with towels, toiletries, Wi-Fi, late checkout, and maintenance. What do you need?",
       "bot"
     );
   } else {
-    messages.forEach(m => bubble(m.content, m.role === "user" ? "you" : "bot"));
+    for (const m of messages) {
+      bubble(m.content, m.role === "user" ? "you" : "bot");
+    }
   }
 }
 
-render();
-
 /* ================= LOGGING ================= */
 
-function logToSheet(message) {
+function detectType(text) {
+  const t = (text || "").toLowerCase();
+  if (t.includes("towel") || t.includes("toalla")) return "Towels";
+  if (t.includes("toiletr") || t.includes("soap") || t.includes("shampoo") || t.includes("jabón") || t.includes("champú")) return "Toiletries";
+  if (t.includes("maint") || t.includes("broken") || t.includes("repair") || t.includes("leak") || t.includes("ac") || t.includes("heat") || t.includes("no funciona") || t.includes("gotea")) return "Maintenance";
+  if (t.includes("late checkout") || t.includes("checkout tarde") || t.includes("salida tarde")) return "Late checkout";
+  if (t.includes("wifi") || t.includes("wi-fi") || t.includes("internet") || t.includes("contraseña")) return "Wi-Fi help";
+  if (t.includes("noise") || t.includes("ruido") || t.includes("loud")) return "Noise";
+  return "Other";
+}
+
+// Sends to Google Sheet (no-cors = no errors on browser)
+function logToSheet({ room, type, message }) {
+  if (!SHEET_LOG_URL) return;
   fetch(SHEET_LOG_URL, {
     method: "POST",
     mode: "no-cors",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({
-      room,
-      type: "Guest Message",
-      message
-    })
-  }).catch(()=>{});
+    body: JSON.stringify({ room, type, message })
+  }).catch(() => {});
 }
 
-/* ================= SEND ================= */
+function languageInstruction() {
+  return (lang === "es") ? "Please reply in Spanish." : "Please reply in English.";
+}
 
-async function send(text) {
+/* ================= MAIN SEND ================= */
+
+async function sendMessage(text) {
   if (!text) return;
 
+  // Save + show user message
   messages.push({ role: "user", content: text });
   localStorage.setItem("messages", JSON.stringify(messages));
   bubble(text, "you");
   input.value = "";
 
-  logToSheet(text);
+  // Log to sheet
+  logToSheet({ room, type: detectType(text), message: text });
 
+  // Typing indicator
   bubble(lang === "es" ? "Escribiendo…" : "Typing…", "bot");
+  const typingEl = chat.lastChild;
 
   try {
+    // Use last messages + language instruction
+    const outgoing = [
+      ...messages.slice(-8),
+      { role: "user", content: languageInstruction() }
+    ];
+
     const res = await fetch("/.netlify/functions/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        room,
-        messages: [
-          ...messages.slice(-8),
-          { role: "system", content: lang === "es" ? "Reply in Spanish." : "Reply in English." }
-        ]
-      })
+      body: JSON.stringify({ room, messages: outgoing })
     });
 
     const data = await res.json();
-    chat.lastChild.remove();
+    typingEl.remove();
 
-    messages.push({ role: "assistant", content: data.reply });
+    const reply = data.reply || (lang === "es" ? "Lo siento—algo salió mal." : "Sorry—something went wrong.");
+    messages.push({ role: "assistant", content: reply });
     localStorage.setItem("messages", JSON.stringify(messages));
-    bubble(data.reply, "bot");
-
-  } catch {
-    chat.lastChild.remove();
+    bubble(reply, "bot");
+  } catch (e) {
+    typingEl.remove();
     bubble(lang === "es"
-      ? "Error de red. Llame a recepción."
-      : "Network error. Please call the front desk.",
+      ? "Error de red. Intenta de nuevo o llama a la recepción."
+      : "Network error. Please try again or call the front desk.",
       "bot"
     );
   }
 }
 
-/* ================= EVENTS ================= */
+/* ================= BUTTONS / EVENTS ================= */
 
-document.getElementById("sendBtn").onclick = () => send(input.value.trim());
-input.onkeydown = e => e.key === "Enter" && send(input.value.trim());
+sendBtn.addEventListener("click", () => sendMessage(input.value.trim()));
 
-document.querySelectorAll(".chip").forEach(btn =>
-  btn.onclick = () => send(btn.dataset.msg)
-);
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") sendMessage(input.value.trim());
+});
 
-document.getElementById("resetBtn").onclick = () => {
+document.querySelectorAll(".chip").forEach(btn => {
+  btn.addEventListener("click", () => sendMessage(btn.dataset.msg));
+});
+
+resetBtn.addEventListener("click", () => {
   localStorage.removeItem("messages");
   messages = [];
-  render();
-};
+  renderHistory();
+});
 
-document.getElementById("langSelect").onchange = e => {
-  lang = e.target.value;
+langSelect.addEventListener("change", () => {
+  lang = langSelect.value;
   localStorage.setItem("lang", lang);
-  render();
-};
+  renderHistory();
+});
 
-document.getElementById("callBtn").onclick = () => {
+callBtn.addEventListener("click", () => {
   window.location.href = `tel:${FRONT_DESK_PHONE}`;
-};
+});
 
-document.getElementById("infoBtn").onclick = () => {
-  bubble(
-    lang === "es"
-      ? "📍 AmericInn Hartford\nCheck-in: 3 PM\nCheck-out: 11 AM\nWi-Fi: Connect@AmericInn (sin contraseña)\nDesayuno: 6–10 AM cerca de recepción"
-      : "📍 AmericInn Hartford\nCheck-in: 3:00 PM\nCheck-out: 11:00 AM\nWi-Fi: Connect@AmericInn (no password)\nBreakfast: 6–10 AM near front desk",
-    "bot"
-  );
-};
+infoBtn.addEventListener("click", () => {
+  const txt = (lang === "es")
+    ? "📍 AmericInn Hartford\n• Check-in: 3:00 PM\n• Check-out: 11:00 AM\n• Wi-Fi: Connect@AmericInn (sin contraseña)\n• Desayuno: 6:00–10:00 AM (cerca de recepción)\n• Piscina: 8:00–10:00 PM\n• Silencio: 11:00 PM–7:00 AM\n• Recepción: 262-673-2200"
+    : "📍 AmericInn Hartford\n• Check-in: 3:00 PM\n• Check-out: 11:00 AM\n• Wi-Fi: Connect@AmericInn (no password)\n• Breakfast: 6:00–10:00 AM (near front desk)\n• Pool: 8:00–10:00 PM\n• Quiet hours: 11:00 PM–7:00 AM\n• Front desk: 262-673-2200";
+  bubble(txt, "bot");
+});
+
+/* ================= START ================= */
+renderHistory();
 </script>
 </body>
 </html>
