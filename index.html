@@ -14,7 +14,14 @@
         <h1>Motel Assistant</h1>
         <p id="roomLine">Room: —</p>
       </div>
-      <button id="resetBtn" class="ghost">Reset</button>
+
+      <div style="display:flex; gap:10px; align-items:center;">
+        <select id="langSelect" class="ghost" aria-label="Language">
+          <option value="en">English</option>
+          <option value="es">Español</option>
+        </select>
+        <button id="resetBtn" class="ghost">Reset</button>
+      </div>
     </header>
 
     <main id="chat" class="chat"></main>
@@ -36,7 +43,7 @@
 
 <script>
 /* =====================================================
-   ✅ GOOGLE SHEETS WEB APP URL (MUST end with /exec)
+   ✅ Google Sheets Web App URL (ends with /exec)
    ===================================================== */
 const SHEET_LOG_URL =
   "https://script.google.com/macros/s/AKfycbzxatP2NITNy0X10cyUo3jl5gcQnTA6qbohTqyXZB8aBimmaQ89jVGy4O6GB25gYirvhA/exec";
@@ -44,6 +51,22 @@ const SHEET_LOG_URL =
 
 const params = new URLSearchParams(window.location.search);
 let room = params.get("room") || localStorage.getItem("room") || "";
+
+// Language preference (default English)
+let lang = localStorage.getItem("lang") || "en";
+const langSelect = document.getElementById("langSelect");
+langSelect.value = lang;
+
+langSelect.addEventListener("change", () => {
+  lang = langSelect.value;
+  localStorage.setItem("lang", lang);
+
+  // Optional: show a tiny confirmation message in chat
+  const msg = (lang === "es")
+    ? "Idioma cambiado a Español."
+    : "Language set to English.";
+  bubble(msg, "bot");
+});
 
 if (!room) {
   room = prompt("Enter your room number (example: 205):") || "";
@@ -71,83 +94,31 @@ function bubble(text, who) {
 function renderHistory() {
   chat.innerHTML = "";
   if (messages.length === 0) {
-    bubble("Hi! I can help with towels, toiletries, Wi-Fi, late checkout, and maintenance. What do you need?", "bot");
+    bubble(
+      lang === "es"
+        ? "¡Hola! Puedo ayudarte con toallas, artículos de aseo, Wi-Fi, salida tardía y mantenimiento. ¿Qué necesitas?"
+        : "Hi! I can help with towels, toiletries, Wi-Fi, late checkout, and maintenance. What do you need?",
+      "bot"
+    );
   } else {
     for (const m of messages) bubble(m.content, m.role === "user" ? "you" : "bot");
   }
 }
 
 /* =====================================================
-   ✅ Detect request type from the guest text
+   ✅ Detect request type from guest text
    ===================================================== */
 function detectType(text) {
   const t = (text || "").toLowerCase();
 
-  if (t.includes("towel")) return "Towels";
-
-  if (
-    t.includes("toiletr") ||
-    t.includes("soap") ||
-    t.includes("shampoo") ||
-    t.includes("conditioner") ||
-    t.includes("toothpaste") ||
-    t.includes("tooth brush") ||
-    t.includes("toothbrush")
-  ) return "Toiletries";
-
-  if (
-    t.includes("housekeep") ||
-    t.includes("clean") ||
-    t.includes("trash") ||
-    t.includes("room service") ||
-    t.includes("make up the room")
-  ) return "Housekeeping";
-
-  if (
-    t.includes("maint") ||
-    t.includes("broken") ||
-    t.includes("not working") ||
-    t.includes("repair") ||
-    t.includes("leak") ||
-    t.includes("ac") ||
-    t.includes("a/c") ||
-    t.includes("heat") ||
-    t.includes("heater") ||
-    t.includes("tv") ||
-    t.includes("remote") ||
-    t.includes("key") ||
-    t.includes("door")
-  ) return "Maintenance";
-
-  if (
-    t.includes("late checkout") ||
-    t.includes("late check out") ||
-    t.includes("extend checkout") ||
-    t.includes("extend check out")
-  ) return "Late checkout";
-
-  if (
-    t.includes("wifi") ||
-    t.includes("wi-fi") ||
-    t.includes("internet") ||
-    t.includes("password") ||
-    t.includes("network")
-  ) return "Wi-Fi help";
-
-  if (
-    t.includes("noise") ||
-    t.includes("loud") ||
-    t.includes("quiet") ||
-    t.includes("neighbors") ||
-    t.includes("party")
-  ) return "Noise";
-
-  if (
-    t.includes("pillow") ||
-    t.includes("blanket") ||
-    t.includes("bedsheet") ||
-    t.includes("sheet")
-  ) return "Bedding";
+  if (t.includes("towel") || t.includes("toalla")) return "Towels";
+  if (t.includes("toiletr") || t.includes("soap") || t.includes("shampoo") || t.includes("jabón") || t.includes("champú")) return "Toiletries";
+  if (t.includes("housekeep") || t.includes("clean") || t.includes("limpiar") || t.includes("basura")) return "Housekeeping";
+  if (t.includes("maint") || t.includes("broken") || t.includes("not working") || t.includes("repair") || t.includes("leak") || t.includes("ac") || t.includes("heat") || t.includes("tv") || t.includes("no funciona") || t.includes("gotea")) return "Maintenance";
+  if (t.includes("late checkout") || t.includes("late check out") || t.includes("salida tarde") || t.includes("checkout tarde")) return "Late checkout";
+  if (t.includes("wifi") || t.includes("wi-fi") || t.includes("internet") || t.includes("contraseña") || t.includes("red")) return "Wi-Fi help";
+  if (t.includes("noise") || t.includes("loud") || t.includes("ruido") || t.includes("muy alto")) return "Noise";
+  if (t.includes("pillow") || t.includes("blanket") || t.includes("almohada") || t.includes("manta")) return "Bedding";
 
   return "Other";
 }
@@ -165,46 +136,55 @@ function logToSheet({ room, type, message }) {
     body: JSON.stringify({ room, type, message })
   }).catch(() => {});
 }
-/* ===================================================== */
+
+/* =====================================================
+   ✅ Add a language instruction message to the AI
+   ===================================================== */
+function languageInstruction() {
+  return (lang === "es")
+    ? "Please reply in Spanish."
+    : "Please reply in English.";
+}
 
 async function sendMessage(text) {
   if (!text) return;
 
-  // Save + show user message
+  // Show + store user message
   messages.push({ role: "user", content: text });
   localStorage.setItem("messages", JSON.stringify(messages));
   bubble(text, "you");
   input.value = "";
 
-  // ✅ Log every guest message with detected type
-  logToSheet({
-    room,
-    type: detectType(text),
-    message: text
-  });
+  // Log every message
+  logToSheet({ room, type: detectType(text), message: text });
 
   // Typing bubble
-  bubble("Typing…", "bot");
+  bubble(lang === "es" ? "Escribiendo…" : "Typing…", "bot");
   const typing = chat.lastChild;
 
   try {
-    // AI call
+    // Include language instruction in the messages we send to the API
+    const outgoing = [
+      ...messages.slice(-9),
+      { role: "user", content: languageInstruction() }
+    ];
+
     const res = await fetch("/.netlify/functions/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ room, messages: messages.slice(-10) })
+      body: JSON.stringify({ room, messages: outgoing })
     });
 
     const data = await res.json();
     typing.remove();
 
-    const reply = data.reply || "Sorry—something went wrong.";
+    const reply = data.reply || (lang === "es" ? "Lo siento—algo salió mal." : "Sorry—something went wrong.");
     messages.push({ role: "assistant", content: reply });
     localStorage.setItem("messages", JSON.stringify(messages));
     bubble(reply, "bot");
   } catch (e) {
     typing.remove();
-    bubble("Network error. Please try again or call the front desk.", "bot");
+    bubble(lang === "es" ? "Error de red. Intenta de nuevo o llama a la recepción." : "Network error. Please try again or call the front desk.", "bot");
   }
 }
 
