@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Motel Assistant</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div>
+        <h1>Motel Assistant</h1>
+        <p id="roomLine">Room: —</p>
+      </div>
+      <button id="resetBtn" class="ghost">Reset</button>
+    </header>
+
+    <main id="chat" class="chat"></main>
+
+    <section class="quick">
+      <button class="chip" data-msg="I need extra towels.">🧻 Towels</button>
+      <button class="chip" data-msg="I need toiletries like soap/shampoo.">🧼 Toiletries</button>
+      <button class="chip" data-msg="I have a maintenance issue in my room.">🔧 Maintenance</button>
+      <button class="chip" data-msg="Can I request a late checkout?">⏰ Late checkout</button>
+      <button class="chip" data-msg="I need Wi-Fi help.">📶 Wi-Fi help</button>
+      <button class="chip" data-msg="I want to report a noise complaint.">🔇 Noise</button>
+    </section>
+
+    <footer class="composer">
+      <input id="input" type="text" placeholder="Type your message..." autocomplete="off" />
+      <button id="sendBtn" class="send">Send</button>
+    </footer>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    let room = params.get("room") || localStorage.getItem("room") || "";
+
+    if (!room) {
+      room = prompt("Enter your room number (example: 205):") || "";
+      room = room.trim();
+      if (room) localStorage.setItem("room", room);
+    }
+    document.getElementById("roomLine").textContent = room ? `Room: ${room}` : "Room: —";
+
+    const chat = document.getElementById("chat");
+    const input = document.getElementById("input");
+    const sendBtn = document.getElementById("sendBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    let messages = JSON.parse(localStorage.getItem("messages") || "[]");
+
+    function bubble(text, who) {
+      const wrap = document.createElement("div");
+      wrap.className = `bubble ${who}`;
+      wrap.innerHTML = `<div class="msg"></div>`;
+      wrap.querySelector(".msg").textContent = text;
+      chat.appendChild(wrap);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function renderHistory() {
+      chat.innerHTML = "";
+      if (messages.length === 0) {
+        bubble("Hi! I can help with towels, toiletries, Wi-Fi, late checkout, and maintenance. What do you need?", "bot");
+      } else {
+        for (const m of messages) bubble(m.content, m.role === "user" ? "you" : "bot");
+      }
+    }
+
+    async function sendMessage(text) {
+      if (!text) return;
+      messages.push({ role: "user", content: text });
+      localStorage.setItem("messages", JSON.stringify(messages));
+      bubble(text, "you");
+      input.value = "";
+
+      bubble("Typing…", "bot");
+      const typing = chat.lastChild;
+
+      try {
+        const res = await fetch("/.netlify/functions/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ room, messages: messages.slice(-10) })
+        });
+
+        const data = await res.json();
+        typing.remove();
+
+        const reply = data.reply || "Sorry—something went wrong.";
+        messages.push({ role: "assistant", content: reply });
+        localStorage.setItem("messages", JSON.stringify(messages));
+        bubble(reply, "bot");
+      } catch (e) {
+        typing.remove();
+        bubble("Network error. Please try again or call the front desk.", "bot");
+      }
+    }
+
+    sendBtn.addEventListener("click", () => sendMessage(input.value.trim()));
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") sendMessage(input.value.trim()); });
+
+    document.querySelectorAll(".chip").forEach(btn => {
+      btn.addEventListener("click", () => sendMessage(btn.dataset.msg));
+    });
+
+    resetBtn.addEventListener("click", () => {
+      localStorage.removeItem("messages");
+      messages = [];
+      renderHistory();
+    });
+
+    renderHistory();
+  </script>
+</body>
+</html>
