@@ -1,81 +1,91 @@
 * { box-sizing: border-box; }
+
 :root{
-  --bg1:#070B18;
-  --bg2:#0B1633;
-  --card: rgba(255,255,255,0.06);
-  --card2: rgba(255,255,255,0.08);
-  --line: rgba(255,255,255,0.12);
+  --bgA:#050814;
+  --bgB:#0B1532;
+
+  --panel: rgba(255,255,255,0.06);
+  --panel2: rgba(255,255,255,0.08);
+  --stroke: rgba(255,255,255,0.14);
+
   --text: rgba(255,255,255,0.92);
-  --muted: rgba(255,255,255,0.70);
-  --muted2: rgba(255,255,255,0.55);
+  --muted: rgba(255,255,255,0.66);
+
   --accent: rgba(59,130,246,0.95);
-  --accentSoft: rgba(59,130,246,0.18);
-  --good: rgba(34,197,94,0.20);
-  --shadow: 0 18px 50px rgba(0,0,0,0.55);
-  --radius: 22px;
+  --accentStroke: rgba(59,130,246,0.42);
+
+  --shadow: 0 18px 55px rgba(0,0,0,0.60);
+  --r: 18px;
 }
 
 html, body { height: 100%; }
+
 body{
   margin:0;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
   color: var(--text);
   background:
-    radial-gradient(1100px 700px at 15% 10%, rgba(59,130,246,0.22), transparent 55%),
-    radial-gradient(900px 600px at 90% 20%, rgba(34,197,94,0.12), transparent 60%),
-    linear-gradient(180deg, var(--bg1), var(--bg2));
+    radial-gradient(900px 600px at 20% 15%, rgba(59,130,246,0.20), transparent 60%),
+    radial-gradient(800px 500px at 90% 20%, rgba(34,197,94,0.10), transparent 62%),
+    linear-gradient(180deg, var(--bgA), var(--bgB));
   display:grid;
   place-items:center;
   padding: 18px;
 }
 
 .app{
-  width: min(460px, 96vw);
+  width: min(430px, 96vw);
   height: min(92vh, 860px);
-  border-radius: var(--radius);
-  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.05));
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow);
+  border-radius: 22px;
   overflow:hidden;
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.05);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
   display:grid;
   grid-template-rows: auto 1fr auto auto;
-  backdrop-filter: blur(12px);
 }
 
+/* ---------- Top bar (premium + compact) ---------- */
 .topbar{
-  padding: 16px 16px 12px;
+  padding: 14px 14px 12px;
   display:flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+  align-items:flex-start;
+  gap: 10px;
   background:
-    radial-gradient(600px 120px at 20% 0%, rgba(59,130,246,0.18), transparent 60%),
-    rgba(0,0,0,0.14);
-  border-bottom: 1px solid var(--line);
+    radial-gradient(700px 150px at 25% 0%, rgba(59,130,246,0.16), transparent 62%),
+    rgba(0,0,0,0.18);
+  border-bottom: 1px solid rgba(255,255,255,0.10);
 }
 
 .brand{
   display:flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
+}
+
+.brandTop{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  min-width:0;
 }
 
 .brand h1{
   margin:0;
   font-size: 16px;
+  line-height: 1.15;
   letter-spacing: 0.2px;
-  display:flex;
-  align-items:center;
-  gap: 8px;
 }
 
 .badge{
   font-size: 11px;
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.10);
-  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
   color: var(--muted);
   white-space: nowrap;
 }
@@ -84,65 +94,67 @@ body{
   margin:0;
   font-size: 12px;
   color: var(--muted);
-  overflow:hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
+/* Actions: wrap nicely, not huge pills */
 .actions{
   display:flex;
-  gap: 10px;
-  align-items:center;
+  flex-wrap: wrap;
+  justify-content:flex-end;
+  gap: 8px;
+  max-width: 52%;
 }
 
-.ghost{
+.control{
   appearance:none;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.16);
   color: var(--text);
-  padding: 9px 10px;
-  border-radius: 14px;
+  padding: 8px 10px;
+  border-radius: 12px;
   cursor:pointer;
   font-size: 13px;
+  line-height: 1;
   transition: transform .12s ease, background .12s ease, border-color .12s ease;
 }
-.ghost:hover{
+
+.control:hover{
   transform: translateY(-1px);
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.09);
   border-color: rgba(255,255,255,0.22);
 }
-.ghost:active{ transform: translateY(0px) scale(0.99); }
+.control:active{ transform: translateY(0px) scale(0.99); }
 
-select.ghost{
+select.control{
   padding-right: 28px;
 }
 
+/* ---------- Chat ---------- */
 .chat{
-  padding: 14px 14px 8px;
+  padding: 14px;
   overflow-y: auto;
   display:flex;
   flex-direction: column;
   gap: 10px;
-  scroll-behavior: smooth;
 }
 
 .bubble{
   max-width: 86%;
   padding: 10px 12px;
-  border-radius: 18px;
-  line-height: 1.35;
-  font-size: 14px;
+  border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.06);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.22);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.22);
+  line-height: 1.35;
+  font-size: 14px;
   animation: pop .12s ease-out;
 }
-@keyframes pop { from { transform: scale(0.98); opacity: 0.7;} to { transform: scale(1); opacity:1;} }
+@keyframes pop { from { transform: scale(0.985); opacity: 0.65;} to { transform: scale(1); opacity:1;} }
 
 .bubble.you{
   align-self: flex-end;
-  background: linear-gradient(180deg, rgba(59,130,246,0.26), rgba(59,130,246,0.18));
-  border-color: rgba(59,130,246,0.35);
+  background: linear-gradient(180deg, rgba(59,130,246,0.22), rgba(59,130,246,0.14));
+  border-color: var(--accentStroke);
 }
 
 .bubble.bot{
@@ -150,60 +162,56 @@ select.ghost{
   background: rgba(255,255,255,0.07);
 }
 
-.meta{
-  font-size: 11px;
-  color: var(--muted2);
-  margin-top: 6px;
-}
-
+/* ---------- Quick actions ---------- */
 .quick{
   padding: 10px 12px 12px;
   display:flex;
   flex-wrap: wrap;
   gap: 8px;
-  background: rgba(0,0,0,0.12);
+  background: rgba(0,0,0,0.16);
   border-top: 1px solid rgba(255,255,255,0.10);
 }
 
 .chip{
-  border: 1px solid rgba(255,255,255,0.16);
+  border: 1px solid rgba(255,255,255,0.14);
   background: rgba(255,255,255,0.06);
   color: var(--text);
-  padding: 9px 10px;
+  padding: 9px 11px;
   border-radius: 999px;
-  cursor: pointer;
+  cursor:pointer;
   font-size: 13px;
   transition: transform .12s ease, background .12s ease, border-color .12s ease;
-  user-select: none;
+  user-select:none;
 }
 .chip:hover{
   transform: translateY(-1px);
-  background: rgba(255,255,255,0.09);
-  border-color: rgba(255,255,255,0.24);
+  background: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.22);
 }
 .chip:active{ transform: translateY(0px) scale(0.99); }
 
 .chip.primary{
-  background: var(--accentSoft);
-  border-color: rgba(59,130,246,0.35);
+  background: rgba(59,130,246,0.16);
+  border-color: rgba(59,130,246,0.40);
 }
 
+/* ---------- Composer ---------- */
 .composer{
   padding: 12px;
   display:flex;
   gap: 10px;
-  background: rgba(0,0,0,0.16);
+  background: rgba(0,0,0,0.18);
   border-top: 1px solid rgba(255,255,255,0.10);
 }
 
 .composer input{
   flex: 1;
   padding: 12px 12px;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 1px solid rgba(255,255,255,0.14);
   background: rgba(255,255,255,0.06);
   color: var(--text);
-  outline: none;
+  outline:none;
   font-size: 14px;
 }
 .composer input::placeholder{ color: rgba(255,255,255,0.45); }
@@ -214,9 +222,9 @@ select.ghost{
 
 .send{
   padding: 12px 14px;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 1px solid rgba(59,130,246,0.35);
-  cursor: pointer;
+  cursor:pointer;
   background: linear-gradient(180deg, rgba(59,130,246,0.95), rgba(59,130,246,0.80));
   color: white;
   font-weight: 700;
@@ -225,8 +233,10 @@ select.ghost{
 .send:hover{ transform: translateY(-1px); filter: brightness(1.05); }
 .send:active{ transform: translateY(0px) scale(0.99); }
 
+/* ---------- Mobile tweaks ---------- */
 @media (max-width: 420px){
   .app{ height: 94vh; }
-  .quick{ gap: 6px; }
-  .chip{ font-size: 12px; padding: 8px 9px; }
+  .badge{ display:none; }
+  .actions{ max-width: 60%; }
+  .chip{ font-size: 12px; padding: 8px 10px; }
 }
