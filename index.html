@@ -3,23 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Motel Assistant</title>
+  <title>AmericInn Hartford — Guest Assistant</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
   <div class="app">
     <header class="topbar">
-      <div>
-        <h1>Motel Assistant</h1>
+      <div class="brand">
+        <h1>
+          AmericInn Hartford
+          <span class="badge">Guest Assistant</span>
+        </h1>
         <p id="roomLine">Room: —</p>
       </div>
 
-      <div style="display:flex; gap:10px; align-items:center;">
+      <div class="actions">
         <select id="langSelect" class="ghost" aria-label="Language">
           <option value="en">English</option>
           <option value="es">Español</option>
         </select>
+
+        <button id="infoBtn" class="ghost" title="Hotel Info">Hotel Info</button>
+        <button id="callBtn" class="ghost" title="Call Front Desk">Call</button>
         <button id="resetBtn" class="ghost">Reset</button>
       </div>
     </header>
@@ -27,7 +33,7 @@
     <main id="chat" class="chat"></main>
 
     <section class="quick">
-      <button class="chip" data-msg="I need extra towels.">🧻 Towels</button>
+      <button class="chip primary" data-msg="I need extra towels.">🧻 Towels</button>
       <button class="chip" data-msg="I need toiletries like soap/shampoo.">🧼 Toiletries</button>
       <button class="chip" data-msg="I have a maintenance issue in my room.">🔧 Maintenance</button>
       <button class="chip" data-msg="Can I request a late checkout?">⏰ Late checkout</button>
@@ -49,36 +55,22 @@ const SHEET_LOG_URL =
   "https://script.google.com/macros/s/AKfycbzxatP2NITNy0X10cyUo3jl5gcQnTA6qbohTqyXZB8aBimmaQ89jVGy4O6GB25gYirvhA/exec";
 /* ===================================================== */
 
+const FRONT_DESK_PHONE = "262-673-2200";
+
 const params = new URLSearchParams(window.location.search);
 let room = params.get("room") || localStorage.getItem("room") || "";
 
-// Language preference (default English)
+// Language preference
 let lang = localStorage.getItem("lang") || "en";
 const langSelect = document.getElementById("langSelect");
 langSelect.value = lang;
-
-langSelect.addEventListener("change", () => {
-  lang = langSelect.value;
-  localStorage.setItem("lang", lang);
-
-  // Optional: show a tiny confirmation message in chat
-  const msg = (lang === "es")
-    ? "Idioma cambiado a Español."
-    : "Language set to English.";
-  bubble(msg, "bot");
-});
-
-if (!room) {
-  room = prompt("Enter your room number (example: 205):") || "";
-  room = room.trim();
-  if (room) localStorage.setItem("room", room);
-}
-document.getElementById("roomLine").textContent = room ? `Room: ${room}` : "Room: —";
 
 const chat = document.getElementById("chat");
 const input = document.getElementById("input");
 const sendBtn = document.getElementById("sendBtn");
 const resetBtn = document.getElementById("resetBtn");
+const infoBtn = document.getElementById("infoBtn");
+const callBtn = document.getElementById("callBtn");
 
 let messages = JSON.parse(localStorage.getItem("messages") || "[]");
 
@@ -91,13 +83,26 @@ function bubble(text, who) {
   chat.scrollTop = chat.scrollHeight;
 }
 
+langSelect.addEventListener("change", () => {
+  lang = langSelect.value;
+  localStorage.setItem("lang", lang);
+  bubble(lang === "es" ? "Idioma cambiado a Español." : "Language set to English.", "bot");
+});
+
+if (!room) {
+  room = prompt("Enter your room number (example: 205):") || "";
+  room = room.trim();
+  if (room) localStorage.setItem("room", room);
+}
+document.getElementById("roomLine").textContent = room ? `Room: ${room}` : "Room: —";
+
 function renderHistory() {
   chat.innerHTML = "";
   if (messages.length === 0) {
     bubble(
       lang === "es"
-        ? "¡Hola! Puedo ayudarte con toallas, artículos de aseo, Wi-Fi, salida tardía y mantenimiento. ¿Qué necesitas?"
-        : "Hi! I can help with towels, toiletries, Wi-Fi, late checkout, and maintenance. What do you need?",
+        ? "¡Hola! Soy tu asistente del hotel. Puedo ayudarte con toallas, artículos de aseo, Wi-Fi, salida tardía y mantenimiento. ¿Qué necesitas?"
+        : "Hi! I’m your hotel assistant. I can help with towels, toiletries, Wi-Fi, late checkout, and maintenance. What do you need?",
       "bot"
     );
   } else {
@@ -105,12 +110,8 @@ function renderHistory() {
   }
 }
 
-/* =====================================================
-   ✅ Detect request type from guest text
-   ===================================================== */
 function detectType(text) {
   const t = (text || "").toLowerCase();
-
   if (t.includes("towel") || t.includes("toalla")) return "Towels";
   if (t.includes("toiletr") || t.includes("soap") || t.includes("shampoo") || t.includes("jabón") || t.includes("champú")) return "Toiletries";
   if (t.includes("housekeep") || t.includes("clean") || t.includes("limpiar") || t.includes("basura")) return "Housekeeping";
@@ -119,16 +120,11 @@ function detectType(text) {
   if (t.includes("wifi") || t.includes("wi-fi") || t.includes("internet") || t.includes("contraseña") || t.includes("red")) return "Wi-Fi help";
   if (t.includes("noise") || t.includes("loud") || t.includes("ruido") || t.includes("muy alto")) return "Noise";
   if (t.includes("pillow") || t.includes("blanket") || t.includes("almohada") || t.includes("manta")) return "Bedding";
-
   return "Other";
 }
 
-/* =====================================================
-   ✅ Log to Google Sheet (CORS-safe fire-and-forget)
-   ===================================================== */
 function logToSheet({ room, type, message }) {
   if (!SHEET_LOG_URL) return;
-
   fetch(SHEET_LOG_URL, {
     method: "POST",
     mode: "no-cors",
@@ -137,33 +133,40 @@ function logToSheet({ room, type, message }) {
   }).catch(() => {});
 }
 
-/* =====================================================
-   ✅ Add a language instruction message to the AI
-   ===================================================== */
 function languageInstruction() {
-  return (lang === "es")
-    ? "Please reply in Spanish."
-    : "Please reply in English.";
+  return (lang === "es") ? "Please reply in Spanish." : "Please reply in English.";
 }
+
+// Hotel info message (beautiful + accurate)
+function hotelInfoText() {
+  return (lang === "es")
+    ? `📍 *AmericInn Hartford*\n• Check-in: 3:00 PM\n• Check-out: 11:00 AM\n• Wi-Fi: Connect@AmericInn (sin contraseña)\n• Desayuno: 6:00 AM – 10:00 AM (cerca de recepción)\n• Piscina: 8:00 AM – 10:00 PM\n• Silencio: 11:00 PM – 7:00 AM\n• Mascotas: $25 por mascota por noche (no dejar solo)\n• Recepción: ${FRONT_DESK_PHONE}`
+    : `📍 *AmericInn Hartford*\n• Check-in: 3:00 PM\n• Check-out: 11:00 AM\n• Wi-Fi: Connect@AmericInn (no password)\n• Breakfast: 6:00 AM – 10:00 AM (near front desk)\n• Pool: 8:00 AM – 10:00 PM\n• Quiet hours: 11:00 PM – 7:00 AM\n• Pets: $25 per pet per night (do not leave alone)\n• Front Desk: ${FRONT_DESK_PHONE}`;
+}
+
+infoBtn.addEventListener("click", () => {
+  bubble(hotelInfoText(), "bot");
+});
+
+callBtn.addEventListener("click", () => {
+  // Mobile phones will call. On desktop, it will show a dialer attempt.
+  window.location.href = `tel:${FRONT_DESK_PHONE.replace(/[^0-9]/g, "")}`;
+});
 
 async function sendMessage(text) {
   if (!text) return;
 
-  // Show + store user message
   messages.push({ role: "user", content: text });
   localStorage.setItem("messages", JSON.stringify(messages));
   bubble(text, "you");
   input.value = "";
 
-  // Log every message
   logToSheet({ room, type: detectType(text), message: text });
 
-  // Typing bubble
   bubble(lang === "es" ? "Escribiendo…" : "Typing…", "bot");
   const typing = chat.lastChild;
 
   try {
-    // Include language instruction in the messages we send to the API
     const outgoing = [
       ...messages.slice(-9),
       { role: "user", content: languageInstruction() }
@@ -189,13 +192,9 @@ async function sendMessage(text) {
 }
 
 sendBtn.addEventListener("click", () => sendMessage(input.value.trim()));
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") sendMessage(input.value.trim());
-});
+input.addEventListener("keydown", (e) => { if (e.key === "Enter") sendMessage(input.value.trim()); });
 
-document.querySelectorAll(".chip").forEach(btn => {
-  btn.addEventListener("click", () => sendMessage(btn.dataset.msg));
-});
+document.querySelectorAll(".chip").forEach(btn => btn.addEventListener("click", () => sendMessage(btn.dataset.msg)));
 
 resetBtn.addEventListener("click", () => {
   localStorage.removeItem("messages");
