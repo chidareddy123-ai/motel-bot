@@ -36,12 +36,10 @@
 
 <script>
 /* =====================================================
-   🔴 IMPORTANT: PASTE YOUR GOOGLE WEB APP URL BELOW
-   It MUST end with /exec
+   ✅ GOOGLE SHEETS WEB APP URL (MUST end with /exec)
    ===================================================== */
 const SHEET_LOG_URL =
   "https://script.google.com/macros/s/AKfycbzxatP2NITNy0X10cyUo3jl5gcQnTA6qbohTqyXZB8aBimmaQ89jVGy4O6GB25gYirvhA/exec";
-
 /* ===================================================== */
 
 const params = new URLSearchParams(window.location.search);
@@ -73,19 +71,89 @@ function bubble(text, who) {
 function renderHistory() {
   chat.innerHTML = "";
   if (messages.length === 0) {
-    bubble(
-      "Hi! I can help with towels, toiletries, Wi-Fi, late checkout, and maintenance. What do you need?",
-      "bot"
-    );
+    bubble("Hi! I can help with towels, toiletries, Wi-Fi, late checkout, and maintenance. What do you need?", "bot");
   } else {
-    for (const m of messages) {
-      bubble(m.content, m.role === "user" ? "you" : "bot");
-    }
+    for (const m of messages) bubble(m.content, m.role === "user" ? "you" : "bot");
   }
 }
 
 /* =====================================================
-   ✅ GOOGLE SHEETS LOGGER (CORS SAFE)
+   ✅ Detect request type from the guest text
+   ===================================================== */
+function detectType(text) {
+  const t = (text || "").toLowerCase();
+
+  if (t.includes("towel")) return "Towels";
+
+  if (
+    t.includes("toiletr") ||
+    t.includes("soap") ||
+    t.includes("shampoo") ||
+    t.includes("conditioner") ||
+    t.includes("toothpaste") ||
+    t.includes("tooth brush") ||
+    t.includes("toothbrush")
+  ) return "Toiletries";
+
+  if (
+    t.includes("housekeep") ||
+    t.includes("clean") ||
+    t.includes("trash") ||
+    t.includes("room service") ||
+    t.includes("make up the room")
+  ) return "Housekeeping";
+
+  if (
+    t.includes("maint") ||
+    t.includes("broken") ||
+    t.includes("not working") ||
+    t.includes("repair") ||
+    t.includes("leak") ||
+    t.includes("ac") ||
+    t.includes("a/c") ||
+    t.includes("heat") ||
+    t.includes("heater") ||
+    t.includes("tv") ||
+    t.includes("remote") ||
+    t.includes("key") ||
+    t.includes("door")
+  ) return "Maintenance";
+
+  if (
+    t.includes("late checkout") ||
+    t.includes("late check out") ||
+    t.includes("extend checkout") ||
+    t.includes("extend check out")
+  ) return "Late checkout";
+
+  if (
+    t.includes("wifi") ||
+    t.includes("wi-fi") ||
+    t.includes("internet") ||
+    t.includes("password") ||
+    t.includes("network")
+  ) return "Wi-Fi help";
+
+  if (
+    t.includes("noise") ||
+    t.includes("loud") ||
+    t.includes("quiet") ||
+    t.includes("neighbors") ||
+    t.includes("party")
+  ) return "Noise";
+
+  if (
+    t.includes("pillow") ||
+    t.includes("blanket") ||
+    t.includes("bedsheet") ||
+    t.includes("sheet")
+  ) return "Bedding";
+
+  return "Other";
+}
+
+/* =====================================================
+   ✅ Log to Google Sheet (CORS-safe fire-and-forget)
    ===================================================== */
 function logToSheet({ room, type, message }) {
   if (!SHEET_LOG_URL) return;
@@ -97,35 +165,34 @@ function logToSheet({ room, type, message }) {
     body: JSON.stringify({ room, type, message })
   }).catch(() => {});
 }
-
 /* ===================================================== */
 
 async function sendMessage(text) {
   if (!text) return;
 
+  // Save + show user message
   messages.push({ role: "user", content: text });
   localStorage.setItem("messages", JSON.stringify(messages));
   bubble(text, "you");
   input.value = "";
 
-  /* ✅ LOG EVERY GUEST MESSAGE */
+  // ✅ Log every guest message with detected type
   logToSheet({
     room,
-    type: "GuestMessage",
+    type: detectType(text),
     message: text
   });
 
+  // Typing bubble
   bubble("Typing…", "bot");
   const typing = chat.lastChild;
 
   try {
+    // AI call
     const res = await fetch("/.netlify/functions/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        room,
-        messages: messages.slice(-10)
-      })
+      body: JSON.stringify({ room, messages: messages.slice(-10) })
     });
 
     const data = await res.json();
