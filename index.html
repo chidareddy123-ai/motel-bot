@@ -6,6 +6,7 @@
   <title>Motel Assistant</title>
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
   <div class="app">
     <header class="topbar">
@@ -33,106 +34,129 @@
     </footer>
   </div>
 
-  <script>
-    // ✅ Replace this with your Google Apps Script Web App URL (ends with /exec)
-    const SHEET_LOG_URL = "YOUR_GOOGLE_WEB_APP_URL_HERE";
+<script>
+/* =====================================================
+   🔴 IMPORTANT: PASTE YOUR GOOGLE WEB APP URL BELOW
+   It MUST end with /exec
+   ===================================================== */
+const SHEET_LOG_URL =
+  "https://script.google.com/macros/s/AKfycbzxatP2NITNy0X10cyUo3jl5gcQnTA6qbohTqyXZB8aBimmaQ89jVGy4O6GB25gYirvhA/exec";
 
-    const params = new URLSearchParams(window.location.search);
-    let room = params.get("room") || localStorage.getItem("room") || "";
+/* ===================================================== */
 
-    if (!room) {
-      room = prompt("Enter your room number (example: 205):") || "";
-      room = room.trim();
-      if (room) localStorage.setItem("room", room);
+const params = new URLSearchParams(window.location.search);
+let room = params.get("room") || localStorage.getItem("room") || "";
+
+if (!room) {
+  room = prompt("Enter your room number (example: 205):") || "";
+  room = room.trim();
+  if (room) localStorage.setItem("room", room);
+}
+document.getElementById("roomLine").textContent = room ? `Room: ${room}` : "Room: —";
+
+const chat = document.getElementById("chat");
+const input = document.getElementById("input");
+const sendBtn = document.getElementById("sendBtn");
+const resetBtn = document.getElementById("resetBtn");
+
+let messages = JSON.parse(localStorage.getItem("messages") || "[]");
+
+function bubble(text, who) {
+  const wrap = document.createElement("div");
+  wrap.className = `bubble ${who}`;
+  wrap.innerHTML = `<div class="msg"></div>`;
+  wrap.querySelector(".msg").textContent = text;
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function renderHistory() {
+  chat.innerHTML = "";
+  if (messages.length === 0) {
+    bubble(
+      "Hi! I can help with towels, toiletries, Wi-Fi, late checkout, and maintenance. What do you need?",
+      "bot"
+    );
+  } else {
+    for (const m of messages) {
+      bubble(m.content, m.role === "user" ? "you" : "bot");
     }
-    document.getElementById("roomLine").textContent = room ? `Room: ${room}` : "Room: —";
+  }
+}
 
-    const chat = document.getElementById("chat");
-    const input = document.getElementById("input");
-    const sendBtn = document.getElementById("sendBtn");
-    const resetBtn = document.getElementById("resetBtn");
+/* =====================================================
+   ✅ GOOGLE SHEETS LOGGER (CORS SAFE)
+   ===================================================== */
+function logToSheet({ room, type, message }) {
+  if (!SHEET_LOG_URL) return;
 
-    let messages = JSON.parse(localStorage.getItem("messages") || "[]");
+  fetch(SHEET_LOG_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ room, type, message })
+  }).catch(() => {});
+}
 
-    function bubble(text, who) {
-      const wrap = document.createElement("div");
-      wrap.className = `bubble ${who}`;
-      wrap.innerHTML = `<div class="msg"></div>`;
-      wrap.querySelector(".msg").textContent = text;
-      chat.appendChild(wrap);
-      chat.scrollTop = chat.scrollHeight;
-    }
+/* ===================================================== */
 
-    function renderHistory() {
-      chat.innerHTML = "";
-      if (messages.length === 0) {
-        bubble("Hi! I can help with towels, toiletries, Wi-Fi, late checkout, and maintenance. What do you need?", "bot");
-      } else {
-        for (const m of messages) bubble(m.content, m.role === "user" ? "you" : "bot");
-      }
-    }
+async function sendMessage(text) {
+  if (!text) return;
 
-    // ✅ Log every guest message into Google Sheet (doesn't block chatbot)
-    function logToSheet({ room, type, message }) {
-      if (!SHEET_LOG_URL || SHEET_LOG_URL.includes("YOUR_GOOGLE_WEB_APP_URL_HERE")) return;
+  messages.push({ role: "user", content: text });
+  localStorage.setItem("messages", JSON.stringify(messages));
+  bubble(text, "you");
+  input.value = "";
 
-      fetch(SHEET_LOG_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ room, type, message })
-      }).catch(() => {});
-    }
+  /* ✅ LOG EVERY GUEST MESSAGE */
+  logToSheet({
+    room,
+    type: "GuestMessage",
+    message: text
+  });
 
-    async function sendMessage(text) {
-      if (!text) return;
+  bubble("Typing…", "bot");
+  const typing = chat.lastChild;
 
-      // Save + show user message
-      messages.push({ role: "user", content: text });
-      localStorage.setItem("messages", JSON.stringify(messages));
-      bubble(text, "you");
-      input.value = "";
-
-      // ✅ Log every guest message
-      logToSheet({ room, type: "GuestMessage", message: text });
-
-      // Show typing bubble
-      bubble("Typing…", "bot");
-      const typing = chat.lastChild;
-
-      try {
-        const res = await fetch("/.netlify/functions/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ room, messages: messages.slice(-10) })
-        });
-
-        const data = await res.json();
-        typing.remove();
-
-        const reply = data.reply || "Sorry—something went wrong.";
-        messages.push({ role: "assistant", content: reply });
-        localStorage.setItem("messages", JSON.stringify(messages));
-        bubble(reply, "bot");
-      } catch (e) {
-        typing.remove();
-        bubble("Network error. Please try again or call the front desk.", "bot");
-      }
-    }
-
-    sendBtn.addEventListener("click", () => sendMessage(input.value.trim()));
-    input.addEventListener("keydown", (e) => { if (e.key === "Enter") sendMessage(input.value.trim()); });
-
-    document.querySelectorAll(".chip").forEach(btn => {
-      btn.addEventListener("click", () => sendMessage(btn.dataset.msg));
+  try {
+    const res = await fetch("/.netlify/functions/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        room,
+        messages: messages.slice(-10)
+      })
     });
 
-    resetBtn.addEventListener("click", () => {
-      localStorage.removeItem("messages");
-      messages = [];
-      renderHistory();
-    });
+    const data = await res.json();
+    typing.remove();
 
-    renderHistory();
-  </script>
+    const reply = data.reply || "Sorry—something went wrong.";
+    messages.push({ role: "assistant", content: reply });
+    localStorage.setItem("messages", JSON.stringify(messages));
+    bubble(reply, "bot");
+  } catch (e) {
+    typing.remove();
+    bubble("Network error. Please try again or call the front desk.", "bot");
+  }
+}
+
+sendBtn.addEventListener("click", () => sendMessage(input.value.trim()));
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") sendMessage(input.value.trim());
+});
+
+document.querySelectorAll(".chip").forEach(btn => {
+  btn.addEventListener("click", () => sendMessage(btn.dataset.msg));
+});
+
+resetBtn.addEventListener("click", () => {
+  localStorage.removeItem("messages");
+  messages = [];
+  renderHistory();
+});
+
+renderHistory();
+</script>
 </body>
 </html>
