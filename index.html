@@ -34,6 +34,9 @@
   </div>
 
   <script>
+    // ✅ Replace this with your Google Apps Script Web App URL (ends with /exec)
+    const SHEET_LOG_URL = "YOUR_GOOGLE_WEB_APP_URL_HERE";
+
     const params = new URLSearchParams(window.location.search);
     let room = params.get("room") || localStorage.getItem("room") || "";
 
@@ -69,13 +72,30 @@
       }
     }
 
+    // ✅ Log every guest message into Google Sheet (doesn't block chatbot)
+    function logToSheet({ room, type, message }) {
+      if (!SHEET_LOG_URL || SHEET_LOG_URL.includes("YOUR_GOOGLE_WEB_APP_URL_HERE")) return;
+
+      fetch(SHEET_LOG_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ room, type, message })
+      }).catch(() => {});
+    }
+
     async function sendMessage(text) {
       if (!text) return;
+
+      // Save + show user message
       messages.push({ role: "user", content: text });
       localStorage.setItem("messages", JSON.stringify(messages));
       bubble(text, "you");
       input.value = "";
 
+      // ✅ Log every guest message
+      logToSheet({ room, type: "GuestMessage", message: text });
+
+      // Show typing bubble
       bubble("Typing…", "bot");
       const typing = chat.lastChild;
 
