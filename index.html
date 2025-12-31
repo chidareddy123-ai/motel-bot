@@ -187,7 +187,7 @@ infoBtn.onclick = () => {
   );
 };
 
-/* Towels confirmation (uses confirmBar) */
+/* Towels confirmation */
 const towelBtn = document.getElementById("towelBtn");
 if (towelBtn) {
   towelBtn.addEventListener("click", () => {
@@ -211,15 +211,8 @@ if (towelBtn) {
     noBtn.type = "button";
     noBtn.textContent = lang === "es" ? "❌ No, cancelar" : "❌ No, cancel";
 
-    yesBtn.onclick = () => {
-      sendMessage("I need extra towels.");
-      confirmWrap.remove();
-    };
-
-    noBtn.onclick = () => {
-      bubble(lang === "es" ? "Solicitud cancelada." : "Request cancelled.", "bot");
-      confirmWrap.remove();
-    };
+    yesBtn.onclick = () => { sendMessage("I need extra towels."); confirmWrap.remove(); };
+    noBtn.onclick = () => { bubble(lang === "es" ? "Solicitud cancelada." : "Request cancelled.", "bot"); confirmWrap.remove(); };
 
     confirmWrap.appendChild(yesBtn);
     confirmWrap.appendChild(noBtn);
@@ -229,6 +222,9 @@ if (towelBtn) {
 }
 
 renderHistory();
+
+/* ✅ Extra safety: focus input when page loads */
+setTimeout(() => { try { input.focus(); } catch(e){} }, 300);
 </script>
 </body>
 </html>

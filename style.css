@@ -25,6 +25,7 @@ body{
   padding: 18px;
 }
 
+/* ✅ FLEX layout (fixes typing overlap issues) */
 .app{
   width: min(430px, 96vw);
   height: min(92vh, 860px);
@@ -34,8 +35,10 @@ body{
   background: rgba(255,255,255,0.05);
   box-shadow: var(--shadow);
   backdrop-filter: blur(14px);
-  display:grid;
-  grid-template-rows: auto 1fr auto auto;
+
+  display:flex;
+  flex-direction: column;
+  position: relative;
 }
 
 /* Header */
@@ -49,6 +52,7 @@ body{
     radial-gradient(700px 150px at 25% 0%, rgba(59,130,246,0.16), transparent 62%),
     rgba(0,0,0,0.18);
   border-bottom: 1px solid rgba(255,255,255,0.10);
+  flex: 0 0 auto;
 }
 
 .brand{ display:flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -64,7 +68,6 @@ body{
   color: var(--muted);
   white-space: nowrap;
 }
-
 #roomLine{ margin:0; font-size: 12px; color: var(--muted); }
 
 .actions{
@@ -95,15 +98,15 @@ body{
 .control:active{ transform: translateY(0px) scale(0.99); }
 select.control{ padding-right: 28px; }
 
-/* Chat */
+/* ✅ Chat grows and scrolls */
 .chat{
   padding: 14px;
   overflow-y: auto;
   display:flex;
   flex-direction: column;
   gap: 10px;
-  position: relative;
-  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0; /* IMPORTANT for flex scroll */
 }
 
 .bubble{
@@ -116,16 +119,14 @@ select.control{ padding-right: 28px; }
   line-height: 1.35;
   font-size: 14px;
 }
-
 .bubble.you{
   align-self: flex-end;
   background: linear-gradient(180deg, rgba(59,130,246,0.22), rgba(59,130,246,0.14));
   border-color: var(--accentStroke);
 }
-
 .bubble.bot{ align-self: flex-start; }
 
-/* Quick actions bottom bar */
+/* Bottom quick actions */
 .quick{
   padding: 10px 12px 12px;
   display:flex;
@@ -133,8 +134,7 @@ select.control{ padding-right: 28px; }
   gap: 8px;
   background: rgba(0,0,0,0.16);
   border-top: 1px solid rgba(255,255,255,0.10);
-  position: relative;
-  z-index: 2;
+  flex: 0 0 auto;
 }
 
 .chip{
@@ -158,7 +158,7 @@ select.control{ padding-right: 28px; }
   border-color: rgba(59,130,246,0.40);
 }
 
-/* ✅ Confirmation buttons INSIDE chat (won't overlap input) */
+/* Confirmation buttons INSIDE chat */
 .confirmBar{
   display:flex;
   flex-wrap: wrap;
@@ -167,15 +167,14 @@ select.control{ padding-right: 28px; }
   align-self: flex-start;
 }
 
-/* Composer (always clickable) */
+/* ✅ Composer always clickable */
 .composer{
   padding: 12px;
   display:flex;
   gap: 10px;
   background: rgba(0,0,0,0.18);
   border-top: 1px solid rgba(255,255,255,0.10);
-  position: relative;
-  z-index: 999; /* IMPORTANT */
+  flex: 0 0 auto;
 }
 
 .composer input{
@@ -187,7 +186,6 @@ select.control{ padding-right: 28px; }
   color: var(--text);
   outline:none;
   font-size: 14px;
-  pointer-events: auto;
 }
 .composer input::placeholder{ color: rgba(255,255,255,0.45); }
 .composer input:focus{
@@ -203,7 +201,6 @@ select.control{ padding-right: 28px; }
   background: linear-gradient(180deg, rgba(59,130,246,0.95), rgba(59,130,246,0.80));
   color: white;
   font-weight: 700;
-  pointer-events: auto;
 }
 
 @media (max-width: 420px){
