@@ -123,6 +123,7 @@ async function sendMessage(text) {
   localStorage.setItem("messages", JSON.stringify(messages));
   bubble(text, "you");
   input.value = "";
+
   logToSheet({ room, type: detectType(text), message: text });
 
   bubble(lang === "es" ? "Escribiendo…" : "Typing…", "bot");
@@ -147,21 +148,21 @@ async function sendMessage(text) {
     messages.push({ role: "assistant", content: reply });
     localStorage.setItem("messages", JSON.stringify(messages));
     bubble(reply, "bot");
-
   } catch {
     typingEl.remove();
-    bubble(lang === "es" ? "Error de red. Llama a recepción." : "Network error. Please call the front desk.", "bot");
+    bubble(
+      lang === "es" ? "Error de red. Llama a recepción." : "Network error. Please call the front desk.",
+      "bot"
+    );
   }
 }
+
+/* ✅ Make sure input can always be focused */
+input.addEventListener("click", () => input.focus());
 
 sendBtn.onclick = () => sendMessage(input.value.trim());
 input.addEventListener("keydown", (e) => {
   if (e.key === "Enter") sendMessage(input.value.trim());
-});
-
-/* IMPORTANT: focus the input on any click inside app */
-document.querySelector(".app").addEventListener("click", () => {
-  try { input.focus(); } catch(e) {}
 });
 
 document.querySelectorAll(".chip[data-msg]").forEach(btn =>
@@ -194,8 +195,7 @@ infoBtn.onclick = () => {
 };
 
 /* Towels confirmation */
-const towelBtn = document.getElementById("towelBtn");
-towelBtn.onclick = () => {
+document.getElementById("towelBtn").onclick = () => {
   bubble(
     lang === "es"
       ? "¿Desea que llevemos toallas extra a su habitación ahora?"
@@ -203,32 +203,34 @@ towelBtn.onclick = () => {
     "bot"
   );
 
-  const confirmWrap = document.createElement("div");
-  confirmWrap.className = "confirmBar";
+  const wrap = document.createElement("div");
+  wrap.className = "confirmBar";
 
-  const yesBtn = document.createElement("button");
-  yesBtn.className = "chip primary";
-  yesBtn.type = "button";
-  yesBtn.textContent = lang === "es" ? "✅ Sí, por favor" : "✅ Yes, please";
+  const yes = document.createElement("button");
+  yes.className = "chip primary";
+  yes.type = "button";
+  yes.textContent = lang === "es" ? "✅ Sí, por favor" : "✅ Yes, please";
 
-  const noBtn = document.createElement("button");
-  noBtn.className = "chip";
-  noBtn.type = "button";
-  noBtn.textContent = lang === "es" ? "❌ No, cancelar" : "❌ No, cancel";
+  const no = document.createElement("button");
+  no.className = "chip";
+  no.type = "button";
+  no.textContent = lang === "es" ? "❌ No, cancelar" : "❌ No, cancel";
 
-  yesBtn.onclick = () => { sendMessage("I need extra towels."); confirmWrap.remove(); };
-  noBtn.onclick = () => { bubble(lang === "es" ? "Solicitud cancelada." : "Request cancelled.", "bot"); confirmWrap.remove(); };
+  yes.onclick = () => { sendMessage("I need extra towels."); wrap.remove(); };
+  no.onclick  = () => { bubble(lang === "es" ? "Solicitud cancelada." : "Request cancelled.", "bot"); wrap.remove(); };
 
-  confirmWrap.appendChild(yesBtn);
-  confirmWrap.appendChild(noBtn);
-  chat.appendChild(confirmWrap);
+  wrap.appendChild(yes);
+  wrap.appendChild(no);
+  chat.appendChild(wrap);
   chat.scrollTop = chat.scrollHeight;
 
-  try { input.focus(); } catch(e) {}
+  setTimeout(() => { try { input.focus(); } catch(e){} }, 150);
 };
 
 renderHistory();
-setTimeout(() => { try { input.focus(); } catch(e){} }, 400);
+
+/* focus on load */
+setTimeout(() => { try { input.focus(); } catch(e){} }, 350);
 </script>
 </body>
 </html>
