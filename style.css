@@ -25,7 +25,7 @@ body{
   padding: 18px;
 }
 
-/* ✅ FLEX layout (fixes typing overlap issues) */
+/* App container */
 .app{
   width: min(430px, 96vw);
   height: min(92vh, 860px);
@@ -88,17 +88,10 @@ body{
   cursor:pointer;
   font-size: 13px;
   line-height: 1;
-  transition: transform .12s ease, background .12s ease, border-color .12s ease;
 }
-.control:hover{
-  transform: translateY(-1px);
-  background: rgba(255,255,255,0.09);
-  border-color: rgba(255,255,255,0.22);
-}
-.control:active{ transform: translateY(0px) scale(0.99); }
 select.control{ padding-right: 28px; }
 
-/* ✅ Chat grows and scrolls */
+/* Chat grows and scrolls */
 .chat{
   padding: 14px;
   overflow-y: auto;
@@ -106,7 +99,7 @@ select.control{ padding-right: 28px; }
   flex-direction: column;
   gap: 10px;
   flex: 1 1 auto;
-  min-height: 0; /* IMPORTANT for flex scroll */
+  min-height: 0;
 }
 
 .bubble{
@@ -126,7 +119,7 @@ select.control{ padding-right: 28px; }
 }
 .bubble.bot{ align-self: flex-start; }
 
-/* Bottom quick actions */
+/* Bottom quick buttons */
 .quick{
   padding: 10px 12px 12px;
   display:flex;
@@ -145,36 +138,38 @@ select.control{ padding-right: 28px; }
   border-radius: 999px;
   cursor:pointer;
   font-size: 13px;
-  transition: transform .12s ease, background .12s ease, border-color .12s ease;
   user-select:none;
-}
-.chip:hover{
-  transform: translateY(-1px);
-  background: rgba(255,255,255,0.10);
-  border-color: rgba(255,255,255,0.22);
 }
 .chip.primary{
   background: rgba(59,130,246,0.16);
   border-color: rgba(59,130,246,0.40);
 }
 
-/* Confirmation buttons INSIDE chat */
+/* Confirmation buttons inside chat */
 .confirmBar{
   display:flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 2px 0 6px;
   align-self: flex-start;
 }
 
-/* ✅ Composer always clickable */
+/* ✅ BULLETPROOF COMPOSER: always on top, always clickable */
 .composer{
   padding: 12px;
   display:flex;
   gap: 10px;
-  background: rgba(0,0,0,0.18);
+  background: rgba(0,0,0,0.22);
   border-top: 1px solid rgba(255,255,255,0.10);
-  flex: 0 0 auto;
+
+  position: sticky;
+  bottom: 0;
+
+  z-index: 999999;
+  pointer-events: auto;
+}
+
+.composer, .composer *{
+  pointer-events: auto !important;
 }
 
 .composer input{
@@ -186,12 +181,10 @@ select.control{ padding-right: 28px; }
   color: var(--text);
   outline:none;
   font-size: 14px;
+  user-select: text;
+  -webkit-user-select: text;
 }
 .composer input::placeholder{ color: rgba(255,255,255,0.45); }
-.composer input:focus{
-  border-color: rgba(59,130,246,0.45);
-  box-shadow: 0 0 0 4px rgba(59,130,246,0.12);
-}
 
 .send{
   padding: 12px 14px;
