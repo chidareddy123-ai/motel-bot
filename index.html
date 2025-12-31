@@ -10,7 +10,6 @@
 <body>
 <div class="app">
 
-  <!-- ===== HEADER ===== -->
   <header class="topbar">
     <div class="brand">
       <div class="brandTop">
@@ -25,48 +24,32 @@
         <option value="en">English</option>
         <option value="es">Español</option>
       </select>
-
       <button id="infoBtn" class="control" type="button">Hotel Info</button>
       <button id="callBtn" class="control" type="button">Call</button>
       <button id="resetBtn" class="control" type="button">Reset</button>
     </div>
   </header>
 
-  <!-- ===== CHAT ===== -->
   <main id="chat" class="chat"></main>
 
-  <!-- ===== QUICK ACTIONS (ONLY 3 – PREMIUM) ===== -->
   <section class="quick">
-    <!-- Towels uses confirmation flow -->
     <button class="chip primary" type="button" id="towelBtn">🧻 Need towels?</button>
-
-    <!-- These two are normal one-tap -->
     <button class="chip" type="button" data-msg="I have a maintenance issue in my room.">🔧 Maintenance</button>
     <button class="chip" type="button" data-msg="Can I request a late checkout?">⏰ Late checkout</button>
   </section>
 
-  <!-- ===== INPUT ===== -->
   <footer class="composer">
-    <input
-      id="input"
-      type="text"
-      placeholder="Type your message…"
-      autocomplete="off"
-    />
+    <input id="input" type="text" placeholder="Type your message…" autocomplete="off" />
     <button id="sendBtn" class="send" type="button">Send</button>
   </footer>
 
 </div>
 
 <script>
-/* ================= CONFIG ================= */
-
 const SHEET_LOG_URL =
   "https://script.google.com/macros/s/AKfycbzxatP2NITNy0X10cyUo3jl5gcQnTA6qbohTqyXZB8aBimmaQ89jVGy4O6GB25gYirvhA/exec";
 
 const FRONT_DESK_PHONE = "2626732200";
-
-/* ================= ELEMENTS ================= */
 
 const chat = document.getElementById("chat");
 const input = document.getElementById("input");
@@ -76,15 +59,10 @@ const langSelect = document.getElementById("langSelect");
 const infoBtn = document.getElementById("infoBtn");
 const callBtn = document.getElementById("callBtn");
 
-/* ================= STATE ================= */
-
 const params = new URLSearchParams(location.search);
-
 let room = params.get("room") || localStorage.getItem("room") || "";
 let lang = localStorage.getItem("lang") || "en";
 let messages = JSON.parse(localStorage.getItem("messages") || "[]");
-
-/* ================= INIT ================= */
 
 langSelect.value = lang;
 
@@ -92,11 +70,7 @@ if (!room) {
   room = (prompt("Enter your room number (example: 106):") || "").trim();
   if (room) localStorage.setItem("room", room);
 }
-
-document.getElementById("roomLine").textContent =
-  room ? `Room: ${room}` : "Room: —";
-
-/* ================= UI HELPERS ================= */
+document.getElementById("roomLine").textContent = room ? `Room: ${room}` : "Room: —";
 
 function bubble(text, who) {
   const el = document.createElement("div");
@@ -108,7 +82,6 @@ function bubble(text, who) {
 
 function renderHistory() {
   chat.innerHTML = "";
-
   if (messages.length === 0) {
     bubble(
       lang === "es"
@@ -117,13 +90,9 @@ function renderHistory() {
       "bot"
     );
   } else {
-    messages.forEach(m =>
-      bubble(m.content, m.role === "user" ? "you" : "bot")
-    );
+    messages.forEach(m => bubble(m.content, m.role === "user" ? "you" : "bot"));
   }
 }
-
-/* ================= LOGGING ================= */
 
 function detectType(text) {
   const t = (text || "").toLowerCase();
@@ -144,12 +113,8 @@ function logToSheet({ room, type, message }) {
 }
 
 function languageInstruction() {
-  return lang === "es"
-    ? "Please reply in Spanish."
-    : "Please reply in English.";
+  return (lang === "es") ? "Please reply in Spanish." : "Please reply in English.";
 }
-
-/* ================= SEND MESSAGE ================= */
 
 async function sendMessage(text) {
   if (!text) return;
@@ -179,52 +144,40 @@ async function sendMessage(text) {
     const data = await res.json();
     typingEl.remove();
 
-    messages.push({ role: "assistant", content: data.reply });
+    const reply = data.reply || (lang === "es" ? "Lo siento—algo salió mal." : "Sorry—something went wrong.");
+    messages.push({ role: "assistant", content: reply });
     localStorage.setItem("messages", JSON.stringify(messages));
-    bubble(data.reply, "bot");
+    bubble(reply, "bot");
 
   } catch {
     typingEl.remove();
-    bubble(
-      lang === "es"
-        ? "Error de red. Llama a recepción."
-        : "Network error. Please call the front desk.",
-      "bot"
-    );
+    bubble(lang === "es" ? "Error de red. Llama a recepción." : "Network error. Please call the front desk.", "bot");
   }
 }
 
-/* ================= EVENTS ================= */
-
-// Send button + Enter key
 sendBtn.onclick = () => sendMessage(input.value.trim());
 input.onkeydown = e => e.key === "Enter" && sendMessage(input.value.trim());
 
-// Chips (for buttons that still use data-msg)
 document.querySelectorAll(".chip[data-msg]").forEach(btn =>
   btn.onclick = () => sendMessage(btn.dataset.msg)
 );
 
-// Reset
 resetBtn.onclick = () => {
   localStorage.removeItem("messages");
   messages = [];
   renderHistory();
 };
 
-// Language change
 langSelect.onchange = e => {
   lang = e.target.value;
   localStorage.setItem("lang", lang);
   renderHistory();
 };
 
-// Call front desk
 callBtn.onclick = () => {
   window.location.href = `tel:${FRONT_DESK_PHONE}`;
 };
 
-// Hotel Info
 infoBtn.onclick = () => {
   bubble(
     lang === "es"
@@ -234,10 +187,8 @@ infoBtn.onclick = () => {
   );
 };
 
-/* ================= TOWELS CONFIRMATION FLOW ================= */
-
+/* Towels confirmation (uses confirmBar) */
 const towelBtn = document.getElementById("towelBtn");
-
 if (towelBtn) {
   towelBtn.addEventListener("click", () => {
     bubble(
@@ -248,7 +199,7 @@ if (towelBtn) {
     );
 
     const confirmWrap = document.createElement("div");
-    confirmWrap.className = "quick";
+    confirmWrap.className = "confirmBar";
 
     const yesBtn = document.createElement("button");
     yesBtn.className = "chip primary";
@@ -277,7 +228,6 @@ if (towelBtn) {
   });
 }
 
-/* ================= START ================= */
 renderHistory();
 </script>
 </body>

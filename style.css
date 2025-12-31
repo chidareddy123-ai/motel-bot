@@ -3,13 +3,10 @@
 :root{
   --bgA:#050814;
   --bgB:#0B1532;
-
   --stroke: rgba(255,255,255,0.14);
   --text: rgba(255,255,255,0.92);
   --muted: rgba(255,255,255,0.66);
-
   --accentStroke: rgba(59,130,246,0.42);
-
   --shadow: 0 18px 55px rgba(0,0,0,0.60);
 }
 
@@ -54,26 +51,9 @@ body{
   border-bottom: 1px solid rgba(255,255,255,0.10);
 }
 
-.brand{
-  display:flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.brandTop{
-  display:flex;
-  align-items:center;
-  gap: 10px;
-  min-width:0;
-}
-
-.brand h1{
-  margin:0;
-  font-size: 16px;
-  line-height: 1.15;
-  letter-spacing: 0.2px;
-}
+.brand{ display:flex; flex-direction: column; gap: 4px; min-width: 0; }
+.brandTop{ display:flex; align-items:center; gap: 10px; min-width:0; }
+.brand h1{ margin:0; font-size: 16px; line-height: 1.15; letter-spacing: 0.2px; }
 
 .badge{
   font-size: 11px;
@@ -85,13 +65,8 @@ body{
   white-space: nowrap;
 }
 
-#roomLine{
-  margin:0;
-  font-size: 12px;
-  color: var(--muted);
-}
+#roomLine{ margin:0; font-size: 12px; color: var(--muted); }
 
-/* Header buttons */
 .actions{
   display:flex;
   flex-wrap: wrap;
@@ -112,14 +87,12 @@ body{
   line-height: 1;
   transition: transform .12s ease, background .12s ease, border-color .12s ease;
 }
-
 .control:hover{
   transform: translateY(-1px);
   background: rgba(255,255,255,0.09);
   border-color: rgba(255,255,255,0.22);
 }
 .control:active{ transform: translateY(0px) scale(0.99); }
-
 select.control{ padding-right: 28px; }
 
 /* Chat */
@@ -130,7 +103,7 @@ select.control{ padding-right: 28px; }
   flex-direction: column;
   gap: 10px;
   position: relative;
-  z-index: 10;
+  z-index: 1;
 }
 
 .bubble{
@@ -152,7 +125,7 @@ select.control{ padding-right: 28px; }
 
 .bubble.bot{ align-self: flex-start; }
 
-/* Quick actions */
+/* Quick actions bottom bar */
 .quick{
   padding: 10px 12px 12px;
   display:flex;
@@ -161,7 +134,7 @@ select.control{ padding-right: 28px; }
   background: rgba(0,0,0,0.16);
   border-top: 1px solid rgba(255,255,255,0.10);
   position: relative;
-  z-index: 20;
+  z-index: 2;
 }
 
 .chip{
@@ -185,7 +158,16 @@ select.control{ padding-right: 28px; }
   border-color: rgba(59,130,246,0.40);
 }
 
-/* Composer (typing fix included) */
+/* ✅ Confirmation buttons INSIDE chat (won't overlap input) */
+.confirmBar{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 2px 0 6px;
+  align-self: flex-start;
+}
+
+/* Composer (always clickable) */
 .composer{
   padding: 12px;
   display:flex;
@@ -193,7 +175,7 @@ select.control{ padding-right: 28px; }
   background: rgba(0,0,0,0.18);
   border-top: 1px solid rgba(255,255,255,0.10);
   position: relative;
-  z-index: 50;
+  z-index: 999; /* IMPORTANT */
 }
 
 .composer input{
@@ -224,7 +206,6 @@ select.control{ padding-right: 28px; }
   pointer-events: auto;
 }
 
-/* Mobile */
 @media (max-width: 420px){
   .badge{ display:none; }
   .actions{ max-width: 60%; }
