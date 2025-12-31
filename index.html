@@ -8,59 +8,62 @@
 </head>
 
 <body>
-  <div class="app">
+<div class="app">
 
-    <!-- ===== HEADER ===== -->
-    <header class="topbar">
-      <div class="brand">
-        <div class="brandTop">
-          <h1>AmericInn Hartford</h1>
-          <span class="badge">Guest Assistant</span>
-        </div>
-        <p id="roomLine">Room: —</p>
+  <!-- ===== HEADER ===== -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brandTop">
+        <h1>AmericInn Hartford</h1>
+        <span class="badge">Guest Assistant</span>
       </div>
+      <p id="roomLine">Room: —</p>
+    </div>
 
-      <div class="actions">
-        <select id="langSelect" class="control" aria-label="Language">
-          <option value="en">English</option>
-          <option value="es">Español</option>
-        </select>
+    <div class="actions">
+      <select id="langSelect" class="control">
+        <option value="en">English</option>
+        <option value="es">Español</option>
+      </select>
 
-        <button id="infoBtn" class="control" type="button">Hotel Info</button>
-        <button id="callBtn" class="control" type="button">Call</button>
-        <button id="resetBtn" class="control" type="button">Reset</button>
-      </div>
-    </header>
+      <button id="infoBtn" class="control" type="button">Hotel Info</button>
+      <button id="callBtn" class="control" type="button">Call</button>
+      <button id="resetBtn" class="control" type="button">Reset</button>
+    </div>
+  </header>
 
-    <!-- ===== CHAT ===== -->
-    <main id="chat" class="chat"></main>
+  <!-- ===== CHAT ===== -->
+  <main id="chat" class="chat"></main>
 
-    <!-- ===== QUICK ACTIONS ===== -->
-    <section class="quick">
-      <button class="chip primary" type="button" data-msg="I need extra towels.">🧻 Towels</button>
-      <button class="chip" type="button" data-msg="I need toiletries like soap or shampoo.">🧼 Toiletries</button>
-      <button class="chip" type="button" data-msg="I have a maintenance issue in my room.">🔧 Maintenance</button>
-      <button class="chip" type="button" data-msg="Can I request a late checkout?">⏰ Late checkout</button>
-      <button class="chip" type="button" data-msg="I need Wi-Fi help.">📶 Wi-Fi help</button>
-      <button class="chip" type="button" data-msg="I want to report a noise complaint.">🔇 Noise</button>
-    </section>
+  <!-- ===== QUICK ACTIONS (ONLY 3 – PREMIUM) ===== -->
+  <section class="quick">
+    <!-- Towels uses confirmation flow -->
+    <button class="chip primary" type="button" id="towelBtn">🧻 Need towels?</button>
 
-    <!-- ===== INPUT ===== -->
-    <footer class="composer">
-      <input id="input" type="text" placeholder="Type your message…" autocomplete="off" />
-      <button id="sendBtn" class="send" type="button">Send</button>
-    </footer>
+    <!-- These two are normal one-tap -->
+    <button class="chip" type="button" data-msg="I have a maintenance issue in my room.">🔧 Maintenance</button>
+    <button class="chip" type="button" data-msg="Can I request a late checkout?">⏰ Late checkout</button>
+  </section>
 
-  </div>
+  <!-- ===== INPUT ===== -->
+  <footer class="composer">
+    <input
+      id="input"
+      type="text"
+      placeholder="Type your message…"
+      autocomplete="off"
+    />
+    <button id="sendBtn" class="send" type="button">Send</button>
+  </footer>
+
+</div>
 
 <script>
 /* ================= CONFIG ================= */
 
-// Your Google Apps Script Web App URL (ends with /exec)
 const SHEET_LOG_URL =
   "https://script.google.com/macros/s/AKfycbzxatP2NITNy0X10cyUo3jl5gcQnTA6qbohTqyXZB8aBimmaQ89jVGy4O6GB25gYirvhA/exec";
 
-// Front desk phone
 const FRONT_DESK_PHONE = "2626732200";
 
 /* ================= ELEMENTS ================= */
@@ -90,9 +93,10 @@ if (!room) {
   if (room) localStorage.setItem("room", room);
 }
 
-document.getElementById("roomLine").textContent = room ? `Room: ${room}` : "Room: —";
+document.getElementById("roomLine").textContent =
+  room ? `Room: ${room}` : "Room: —";
 
-/* ================= HELPERS ================= */
+/* ================= UI HELPERS ================= */
 
 function bubble(text, who) {
   const el = document.createElement("div");
@@ -108,14 +112,14 @@ function renderHistory() {
   if (messages.length === 0) {
     bubble(
       lang === "es"
-        ? "¡Hola! Soy tu asistente del hotel. Puedo ayudarte con toallas, artículos de aseo, Wi-Fi, salida tardía y mantenimiento. ¿Qué necesitas?"
-        : "Hi! I’m your hotel assistant. I can help with towels, toiletries, Wi-Fi, late checkout, and maintenance. What do you need?",
+        ? "¡Hola! Soy tu asistente del hotel. ¿Cómo puedo ayudarte?"
+        : "Hi! I’m your hotel assistant. How can I help you?",
       "bot"
     );
   } else {
-    for (const m of messages) {
-      bubble(m.content, m.role === "user" ? "you" : "bot");
-    }
+    messages.forEach(m =>
+      bubble(m.content, m.role === "user" ? "you" : "bot")
+    );
   }
 }
 
@@ -124,15 +128,11 @@ function renderHistory() {
 function detectType(text) {
   const t = (text || "").toLowerCase();
   if (t.includes("towel") || t.includes("toalla")) return "Towels";
-  if (t.includes("toiletr") || t.includes("soap") || t.includes("shampoo") || t.includes("jabón") || t.includes("champú")) return "Toiletries";
-  if (t.includes("maint") || t.includes("broken") || t.includes("repair") || t.includes("leak") || t.includes("ac") || t.includes("heat") || t.includes("no funciona") || t.includes("gotea")) return "Maintenance";
+  if (t.includes("maint") || t.includes("broken") || t.includes("repair") || t.includes("leak") || t.includes("ac")) return "Maintenance";
   if (t.includes("late checkout") || t.includes("checkout tarde") || t.includes("salida tarde")) return "Late checkout";
-  if (t.includes("wifi") || t.includes("wi-fi") || t.includes("internet") || t.includes("contraseña")) return "Wi-Fi help";
-  if (t.includes("noise") || t.includes("ruido") || t.includes("loud")) return "Noise";
   return "Other";
 }
 
-// Sends to Google Sheet (no-cors = no errors on browser)
 function logToSheet({ room, type, message }) {
   if (!SHEET_LOG_URL) return;
   fetch(SHEET_LOG_URL, {
@@ -144,29 +144,27 @@ function logToSheet({ room, type, message }) {
 }
 
 function languageInstruction() {
-  return (lang === "es") ? "Please reply in Spanish." : "Please reply in English.";
+  return lang === "es"
+    ? "Please reply in Spanish."
+    : "Please reply in English.";
 }
 
-/* ================= MAIN SEND ================= */
+/* ================= SEND MESSAGE ================= */
 
 async function sendMessage(text) {
   if (!text) return;
 
-  // Save + show user message
   messages.push({ role: "user", content: text });
   localStorage.setItem("messages", JSON.stringify(messages));
   bubble(text, "you");
   input.value = "";
 
-  // Log to sheet
   logToSheet({ room, type: detectType(text), message: text });
 
-  // Typing indicator
   bubble(lang === "es" ? "Escribiendo…" : "Typing…", "bot");
   const typingEl = chat.lastChild;
 
   try {
-    // Use last messages + language instruction
     const outgoing = [
       ...messages.slice(-8),
       { role: "user", content: languageInstruction() }
@@ -181,54 +179,103 @@ async function sendMessage(text) {
     const data = await res.json();
     typingEl.remove();
 
-    const reply = data.reply || (lang === "es" ? "Lo siento—algo salió mal." : "Sorry—something went wrong.");
-    messages.push({ role: "assistant", content: reply });
+    messages.push({ role: "assistant", content: data.reply });
     localStorage.setItem("messages", JSON.stringify(messages));
-    bubble(reply, "bot");
-  } catch (e) {
+    bubble(data.reply, "bot");
+
+  } catch {
     typingEl.remove();
-    bubble(lang === "es"
-      ? "Error de red. Intenta de nuevo o llama a la recepción."
-      : "Network error. Please try again or call the front desk.",
+    bubble(
+      lang === "es"
+        ? "Error de red. Llama a recepción."
+        : "Network error. Please call the front desk.",
       "bot"
     );
   }
 }
 
-/* ================= BUTTONS / EVENTS ================= */
+/* ================= EVENTS ================= */
 
-sendBtn.addEventListener("click", () => sendMessage(input.value.trim()));
+// Send button + Enter key
+sendBtn.onclick = () => sendMessage(input.value.trim());
+input.onkeydown = e => e.key === "Enter" && sendMessage(input.value.trim());
 
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") sendMessage(input.value.trim());
-});
+// Chips (for buttons that still use data-msg)
+document.querySelectorAll(".chip[data-msg]").forEach(btn =>
+  btn.onclick = () => sendMessage(btn.dataset.msg)
+);
 
-document.querySelectorAll(".chip").forEach(btn => {
-  btn.addEventListener("click", () => sendMessage(btn.dataset.msg));
-});
-
-resetBtn.addEventListener("click", () => {
+// Reset
+resetBtn.onclick = () => {
   localStorage.removeItem("messages");
   messages = [];
   renderHistory();
-});
+};
 
-langSelect.addEventListener("change", () => {
-  lang = langSelect.value;
+// Language change
+langSelect.onchange = e => {
+  lang = e.target.value;
   localStorage.setItem("lang", lang);
   renderHistory();
-});
+};
 
-callBtn.addEventListener("click", () => {
+// Call front desk
+callBtn.onclick = () => {
   window.location.href = `tel:${FRONT_DESK_PHONE}`;
-});
+};
 
-infoBtn.addEventListener("click", () => {
-  const txt = (lang === "es")
-    ? "📍 AmericInn Hartford\n• Check-in: 3:00 PM\n• Check-out: 11:00 AM\n• Wi-Fi: Connect@AmericInn (sin contraseña)\n• Desayuno: 6:00–10:00 AM (cerca de recepción)\n• Piscina: 8:00–10:00 PM\n• Silencio: 11:00 PM–7:00 AM\n• Recepción: 262-673-2200"
-    : "📍 AmericInn Hartford\n• Check-in: 3:00 PM\n• Check-out: 11:00 AM\n• Wi-Fi: Connect@AmericInn (no password)\n• Breakfast: 6:00–10:00 AM (near front desk)\n• Pool: 8:00–10:00 PM\n• Quiet hours: 11:00 PM–7:00 AM\n• Front desk: 262-673-2200";
-  bubble(txt, "bot");
-});
+// Hotel Info
+infoBtn.onclick = () => {
+  bubble(
+    lang === "es"
+      ? "📍 AmericInn Hartford\nCheck-in: 3:00 PM\nCheck-out: 11:00 AM\nWi-Fi: Connect@AmericInn (sin contraseña)\nDesayuno: 6–10 AM\nRecepción: 262-673-2200"
+      : "📍 AmericInn Hartford\nCheck-in: 3:00 PM\nCheck-out: 11:00 AM\nWi-Fi: Connect@AmericInn (no password)\nBreakfast: 6–10 AM\nFront Desk: 262-673-2200",
+    "bot"
+  );
+};
+
+/* ================= TOWELS CONFIRMATION FLOW ================= */
+
+const towelBtn = document.getElementById("towelBtn");
+
+if (towelBtn) {
+  towelBtn.addEventListener("click", () => {
+    bubble(
+      lang === "es"
+        ? "¿Desea que llevemos toallas extra a su habitación ahora?"
+        : "Would you like us to bring extra towels to your room now?",
+      "bot"
+    );
+
+    const confirmWrap = document.createElement("div");
+    confirmWrap.className = "quick";
+
+    const yesBtn = document.createElement("button");
+    yesBtn.className = "chip primary";
+    yesBtn.type = "button";
+    yesBtn.textContent = lang === "es" ? "✅ Sí, por favor" : "✅ Yes, please";
+
+    const noBtn = document.createElement("button");
+    noBtn.className = "chip";
+    noBtn.type = "button";
+    noBtn.textContent = lang === "es" ? "❌ No, cancelar" : "❌ No, cancel";
+
+    yesBtn.onclick = () => {
+      sendMessage("I need extra towels.");
+      confirmWrap.remove();
+    };
+
+    noBtn.onclick = () => {
+      bubble(lang === "es" ? "Solicitud cancelada." : "Request cancelled.", "bot");
+      confirmWrap.remove();
+    };
+
+    confirmWrap.appendChild(yesBtn);
+    confirmWrap.appendChild(noBtn);
+    chat.appendChild(confirmWrap);
+    chat.scrollTop = chat.scrollHeight;
+  });
+}
 
 /* ================= START ================= */
 renderHistory();
